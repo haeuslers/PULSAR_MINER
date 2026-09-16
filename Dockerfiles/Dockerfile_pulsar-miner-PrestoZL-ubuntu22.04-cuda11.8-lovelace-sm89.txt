@@ -54,9 +54,6 @@ WORKDIR $PSRHOME
 RUN git clone https://github.com/NVIDIA/cuda-samples.git && \
     cd cuda-samples && git checkout 81992093d2b8c33cab22dbf6852c070c330f1715
 ENV CUDA_SAMPLES_DIR=${PSRHOME}/cuda-samples
-# presto2_on_gpu only consumes headers (helper_cuda.h et al). The full sample
-# build is kept for parity with Ridolfi's reference file; if build time hurts,
-# this RUN can be dropped and the clone alone is sufficient.
 RUN cd $CUDA_SAMPLES_DIR && make -j "$(nproc)" SMS="${SAMPLES_SMS}"
 
 #######################
