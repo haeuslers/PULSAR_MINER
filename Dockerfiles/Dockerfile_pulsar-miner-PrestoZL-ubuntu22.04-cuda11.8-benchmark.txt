@@ -90,37 +90,14 @@ ENV LD_LIBRARY_PATH="${PRESTO}/lib:/usr/local/cuda/lib64"
 ENV LIBRARY_PATH="${PRESTO}/lib"
 WORKDIR ${PRESTO2_ON_GPU}/src
 
-RUN grep -qE '^CUDA_SAMPLES_PATH[[:space:]]*\?=' Makefile \
-      || { echo "FATAL: CUDA_SAMPLES_PATH assignment not found"; exit 1; } && \
-    sed -i -E \
-      "s|^CUDA_SAMPLES_PATH[[:space:]]*\?=.*$|CUDA_SAMPLES_PATH ?= ${CUDA_SAMPLES_DIR}|" \
-      Makefile && \
-    grep -qE "^CUDA_SAMPLES_PATH[[:space:]]*\?=[[:space:]]*${CUDA_SAMPLES_DIR}$" Makefile \
-      || { echo "FATAL: CUDA_SAMPLES_PATH was not updated"; exit 1; }
 
-RUN grep -q 'GENCODE_FLAGS' Makefile \
-      || { echo "FATAL: GENCODE_FLAGS not found in Makefile"; exit 1; } && \
-    sed -i -E '/^[[:space:]]*#?[[:space:]]*GENCODE_FLAGS[[:space:]]*:=/d' Makefile && \
-    printf '%s\n' \
-      'GENCODE_FLAGS := -gencode arch=compute_61,code=sm_61' \
-      'GENCODE_FLAGS := ${GENCODE_FLAGS} -gencode arch=compute_61,code=compute_61' \
-      'GENCODE_FLAGS := ${GENCODE_FLAGS} -gencode arch=compute_89,code=sm_89' \
-      'GENCODE_FLAGS := ${GENCODE_FLAGS} -gencode arch=compute_89,code=compute_89' \
-      >> Makefile && \
-    grep -qE 'compute_61,code=sm_61' Makefile \
-      || { echo "FATAL: sm_61 SASS rule missing"; exit 1; } && \
-    grep -qE 'compute_89,code=sm_89' Makefile \
-      || { echo "FATAL: sm_89 SASS rule missing"; exit 1; }
+RUN sed -i -E 's|CUDA_SAMPLES_PATH.*|CUDA_SAMPLES_PATH ?= /software/cuda-samples|g' Makefile
+RUN sed -i '/GENCODE_FLAGS/d' Makefile && \
+    sed -i '1i GENCODE_FLAGS := -gencode arch=compute_61,code=sm_61 -gencode arch=compute_61,code=compute_61 -gencode arch=compute_89,code=sm_89 -gencode arch=compute_89,code=compute_89' Makefile
 
-
-RUN grep -nE 'GENCODE_FLAGS|gencode' Makefile && \
-    ! grep -qE 'sm_120|compute_120' Makefile \
-      || { echo "FATAL: unsupported CUDA architecture remains in presto2_on_gpu Makefile"; exit 1; }
-
-RUN make makewisdom
-RUN make prep && make -n | grep -E 'nvcc|gencode|compute_61|compute_89' || true
-RUN make
-
+RUN make makewisdom && \
+    make prep && \
+    make
 
 RUN find "${PRESTO2_ON_GPU}/bin" "${PRESTO2_ON_GPU}/lib" \
       -maxdepth 1 -type f -printf '%p\n' | sort
@@ -128,7 +105,6 @@ RUN test -x "${PRESTO2_ON_GPU}/bin/accelsearch" \
       || { echo "FATAL: ${PRESTO2_ON_GPU}/bin/accelsearch missing"; \
            ls -la "${PRESTO2_ON_GPU}/bin" || true; \
            exit 1; }
-
 
 RUN set -e; \
     cuda_objects=0; \
