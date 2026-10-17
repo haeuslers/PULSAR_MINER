@@ -70,7 +70,7 @@ RUN ./prepare && \
     make -j$(nproc) && \
     make install
 
-######################## 
+########################
 # PRESTO2_ON_GPU (sm_61 + sm_89)
 #######################
 WORKDIR $PSRHOME
@@ -90,13 +90,15 @@ ENV LD_LIBRARY_PATH="${PRESTO}/lib:/usr/local/cuda/lib64"
 ENV LIBRARY_PATH="${PRESTO}/lib"
 WORKDIR ${PRESTO2_ON_GPU}/src
 
+RUN make makewisdom
 
-RUN sed -i -E 's|CUDA_SAMPLES_PATH.*|CUDA_SAMPLES_PATH ?= /software/cuda-samples|g' Makefile
-RUN sed -i '/GENCODE_FLAGS/d' Makefile && \
+RUN sed -i 's/[[:space:]]*$//' Makefile
+RUN sed -i -E 's|^[[:space:]]*CUDA_DIR[[:space:]]*[-+?:]*=.*|CUDA_DIR = /usr/local/cuda|' Makefile && \
+    sed -i -E 's|^[[:space:]]*CUDA_SAMPLES_PATH[[:space:]]*[-+?:]*=.*|CUDA_SAMPLES_PATH = /software/cuda-samples|' Makefile && \
+    sed -i -E 's|^([[:space:]]*#?[[:space:]]*GENCODE_FLAGS[[:space:]]*[-+?:]*=.*)|#\1|' Makefile && \
     sed -i '1i GENCODE_FLAGS := -gencode arch=compute_61,code=sm_61 -gencode arch=compute_61,code=compute_61 -gencode arch=compute_89,code=sm_89 -gencode arch=compute_89,code=compute_89' Makefile
 
-RUN make makewisdom && \
-    make prep && \
+RUN make prep && \
     make
 
 RUN find "${PRESTO2_ON_GPU}/bin" "${PRESTO2_ON_GPU}/lib" \
@@ -123,7 +125,6 @@ RUN set -e; \
     [ "$cuda_objects" -gt 0 ] \
       || { echo "FATAL: no CUDA-containing presto2_on_gpu artefact found"; exit 1; }; \
     echo "presto2_on_gpu gencode OK: sm_61 sm_89"
-
 ########################
 # PRESTO (Standard v4)
 #######################
@@ -162,7 +163,7 @@ RUN python3 -m pip install --no-cache-dir \
 #######################
 WORKDIR $PSRHOME
 RUN git clone https://github.com/haeuslers/PrestoZL.git && \
-    cd PrestoZL && git checkout af2e198c3f035171541bc124dc470a37e5747b0f
+    cd PrestoZL && git checkout ec9220aacae8f3da781f82dc41233041657e971f
 ENV PRESTOZL="${PSRHOME}/PrestoZL"
 ENV PRESTO="${PRESTOZL}"
 ENV PATH="${PRESTO}/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
@@ -199,6 +200,8 @@ RUN git clone https://github.com/haeuslers/PULSAR_MINER.git && \
     cd PULSAR_MINER && \
     git checkout "${PULSARMINER_SHA}" && \
     test "$(git rev-parse HEAD)" = "${PULSARMINER_SHA}"
+
+RUN git config --global --add safe.directory '*'
 
 ######################## 
 # SHELL CONFIGURATION
