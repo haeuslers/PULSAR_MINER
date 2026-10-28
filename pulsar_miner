@@ -888,7 +888,7 @@ def check_accelsearch_result(fft_infile, zmax, verbosity_level=0):
         return check_result
 
 
-def check_jerksearch_result(fft_infile, zmax, wmax, verbosity_level=0):
+def check_jerksearch_result(fft_infile, zmax, wmax, verbosity_level=0, flag_prestozl=0):
         fft_infile_nameonly = os.path.basename(fft_infile)
         fft_infile_basename = os.path.splitext(fft_infile_nameonly)[0]
 
@@ -903,12 +903,20 @@ def check_jerksearch_result(fft_infile, zmax, wmax, verbosity_level=0):
         ACCEL_txtcand_filename =  fft_infile.replace(".fft", "_ACCEL_%d_JERK_%d.txtcand"  % (zmax, wmax))
 
         try:
-                if (os.path.getsize(ACCEL_filename) > 0) and (os.path.getsize(ACCEL_cand_filename) > 0) and (os.path.getsize(ACCEL_txtcand_filename) > 0):
-                        result_message = "check_jerksearch_result:: Files exist and their size is > 0! Skipping..."
-                        check_result = True
+                if flag_prestozl:
+                        if (os.path.getsize(ACCEL_filename) > 0) and (os.path.getsize(ACCEL_cand_filename) > 0):
+                                result_message = "check_jerksearch_result:: Files exist and their size is > 0! Skipping..."
+                                check_result = True
+                        else:
+                                result_message = "check_jerksearch_result:: Files exists but at least one of them has size = 0!"
+                                check_result = False
                 else:
-                        result_message = "check_jerksearch_result:: Files exists but at least one of them has size = 0!"
-                        check_result = False
+                        if (os.path.getsize(ACCEL_filename) > 0) and (os.path.getsize(ACCEL_cand_filename) > 0) and (os.path.getsize(ACCEL_txtcand_filename) > 0):
+                                result_message = "check_jerksearch_result:: Files exist and their size is > 0! Skipping..."
+                                check_result = True
+                        else:
+                                result_message = "check_jerksearch_result:: Files exists but at least one of them has size = 0!"
+                                check_result = False
         except OSError:
                 result_message = "check_jerksearch_result:: OSError: It seems jerksearch has not been executed!"
                 check_result = False
@@ -964,13 +972,13 @@ def accelsearch(infile, work_dir, log_abspath, numharm=8, zmax=0, other_flags=""
 
 
 
-def jerksearch(infile, work_dir, log_abspath, numharm=4, zmax=50, wmax=150, other_flags="", dict_env={}, verbosity_level=0, flag_LOG_append=1):
+def jerksearch(infile, work_dir, log_abspath, numharm=4, zmax=50, wmax=150, other_flags="", dict_env={}, verbosity_level=0, flag_LOG_append=1,accelsearch_bin="accelsearch"):
         infile_nameonly = os.path.basename(infile)
         infile_basename = os.path.splitext(infile_nameonly)[0]
         inffile_empty = infile.replace(".fft", "_ACCEL_%d_JERK_%d_empty" % (zmax, wmax))
         sys.stdout.flush()
-        cmd_jerksearch = "accelsearch %s -zmax %d -wmax %d -numharm %d %s" % (other_flags, zmax, wmax, numharm, infile)
-
+        cmd_jerksearch = "%s %s -zmax %d -wmax %d -numharm %d %s" % (accelsearch_bin, other_flags, zmax, wmax, numharm, infile)
+        flag_prestozl = (accelsearch_bin == "accelsearch_cu")
         if verbosity_level >= 2:
                 print()
                 print("BEGIN JERKSEARCH ----------------------------------------------------------------------")
@@ -981,7 +989,7 @@ def jerksearch(infile, work_dir, log_abspath, numharm=4, zmax=50, wmax=150, othe
                 print("jerksearch:: work_dir = %s" % (work_dir))
                 print("jerksearch:: infile = %s" % (infile))
 
-        if check_jerksearch_result(infile, zmax, wmax) == False and check_jerksearch_result(inffile_empty, zmax, wmax) == False:
+        if check_jerksearch_result(infile, zmax, wmax,flag_prestozl=flag_prestozl) == False and check_jerksearch_result(inffile_empty, zmax, wmax, flag_prestozl=flag_prestozl) == False:
                 if verbosity_level >= 2:
                         print("jerksearch:: executing: %s" % (cmd_jerksearch))
                 execute_and_log(cmd_jerksearch, work_dir, log_abspath, dict_env, flag_LOG_append)
@@ -992,7 +1000,7 @@ def jerksearch(infile, work_dir, log_abspath, numharm=4, zmax=50, wmax=150, othe
         if verbosity_level >= 2:
                 print("jerksearch:: NOW I CHECK THE RESULT OF THE EXECUTION!")
 
-        if check_jerksearch_result(infile, zmax, wmax) == False:
+        if check_jerksearch_result(infile, zmax, wmax,flag_prestozl=flag_prestozl) == False:
                 if verbosity_level >= 2:
                         print("False! Then I create a _empty file!")
                 file_empty = open(inffile_empty, "w")
@@ -1240,6 +1248,7 @@ def periodicity_search_FFT(work_dir, log_dir, LOG_basename, zapfile, segment_lab
                 print("periodicity_search_FFT:: WARNING: -flo and -fhi CURRENTLY DISABLED")
         dict_env_zmax_0 = {'PRESTO': presto_env_zmax_0,   'PATH': "%s/bin:%s" % (presto_env_zmax_0, os.environ['PATH']),   'LD_LIBRARY_PATH': "%s/lib:%s" % (presto_env_zmax_0,   os.environ['LD_LIBRARY_PATH'])}
         dict_env_zmax_any = {'PRESTO': presto_env_zmax_any, 'PATH': "%s/bin:%s" % (presto_env_zmax_any, os.environ['PATH']), 'LD_LIBRARY_PATH': "%s/lib:%s" % (presto_env_zmax_any, os.environ['LD_LIBRARY_PATH'])}
+        dict_env_prestozl = {'PRESTO': prestozl_env, 'PATH': "%s/bin:%s" % (prestozl_env, os.environ['PATH']), 'LD_LIBRARY_PATH': "%s/lib:%s" % (prestozl_env, os.environ['LD_LIBRARY_PATH'])}
 
         if verbosity_level >= 2:
                 print("periodicity_search_FFT:: dict_env_zmax_0 = ", dict_env_zmax_0)
@@ -1350,7 +1359,16 @@ def periodicity_search_FFT(work_dir, log_dir, LOG_basename, zapfile, segment_lab
                                                 sys.stdout.flush()
                                                 flag_cuda = ""
                                                 jerksearch_flags = other_flags_accelsearch + flag_cuda
-                                                jerksearch(fft_file, work_dir, log_abspath, numharm=jerksearch_numharm, zmax=jerksearch_zmax, wmax=jerksearch_wmax, other_flags=jerksearch_flags, dict_env=dict_env_zmax_0, verbosity_level=verbosity_level, flag_LOG_append=flag_LOG_append)
+                                                if prestozl_env != "":
+                                                        dict_env = copy.deepcopy(dict_env_prestozl)
+                                                        gpuid = list_cuda_ids[i % len(list_cuda_ids)]
+                                                        dict_env['CUDA_VISIBLE_DEVICES'] = str(gpuid)
+                                                        jerksearch_flags = jerksearch_flags + " -batchsize %d " % (jerksearch_batchsize)
+                                                        jerk_bin="accelsearch_cu"
+                                                else:
+                                                        dict_env = copy.deepcopy(dict_env_zmax_0)
+                                                        jerk_bin="accelsearch"
+                                                jerksearch(fft_file, work_dir, log_abspath, numharm=jerksearch_numharm, zmax=jerksearch_zmax, wmax=jerksearch_wmax, other_flags=jerksearch_flags, dict_env=dict_env, verbosity_level=verbosity_level, flag_LOG_append=flag_LOG_append,accelsearch_bin=jerk_bin)
                                                 tend_jerksearch = time.time()
                                                 time_taken_jerksearch_s = tend_jerksearch - tstart_jerksearch
                                                 print("done in %.2f s!" % (time_taken_jerksearch_s))
