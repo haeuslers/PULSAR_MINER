@@ -108,19 +108,43 @@ def update_pulsar_miner(dir_pulsar_miner, string_this_version, string_latest_ver
                 print()
     
 def check_presto_path(presto_path, key):
-        if os.path.exists(presto_path):
-                if os.path.exists(presto_path+"/bin/accelsearch"):
-                        return True
-                else:
-                        print("%sERROR%s: %s directory '%s' exists but I could not find 'accelsearch' in %s/bin!" % (colors.ERROR+colors.BOLD, colors.ENDCOLOR, key, presto_path, presto_path))
-                        print("Please make sure that your %s installation is actually there and working." % (key))
-                        exit()
-                
-        else:
+        if not os.path.exists(presto_path):
                 print("%sERROR:%s %s directory '%s' does not exist!" % (colors.ERROR+colors.BOLD, colors.ENDCOLOR, key, presto_path))
                 print("Please make sure that the path of %s in your configuration file is correct." % (key))
                 exit()
-                
+        if key == "PRESTOZL":
+                n=[]
+                if os.path.exists(presto_path):
+                        if os.path.exists(presto_path+"/bin/accelsearch_cu"):
+                                n.append("accelsearch_cu")
+                        else:
+                                print("%sERROR%s: %s directory '%s' exists but I could not find 'accelsearch_cu' in %s/bin!" % (colors.ERROR+colors.BOLD, colors.ENDCOLOR, key, presto_path, presto_path))
+                                print("Please make sure that your %s installation is actually there and working." % (key))
+                                exit()
+                if os.path.exists(presto_path):
+                        if os.path.exists(presto_path+"/bin/accelsearch"):
+                                n.append("accelsearch")
+                        else:
+                                print("%sERROR%s: %s directory '%s' exists but I could not find 'accelsearch' in %s/bin!" % (colors.ERROR+colors.BOLD, colors.ENDCOLOR, key, presto_path, presto_path))
+                                print("Please make sure that your %s installation is actually there and working." % (key))
+                                exit()
+                if os.path.exists(presto_path):
+                        if os.path.exists(presto_path+"/bin/prepsubband_cu"):
+                                n.append("prepsubband_cu")
+                        else:
+                                print("%sERROR%s: %s directory '%s' exists but I could not find 'prepsubband_cu' in %s/bin!" % (colors.ERROR+colors.BOLD, colors.ENDCOLOR, key, presto_path, presto_path))
+                                print("Please make sure that your %s installation is actually there and working." % (key))
+                                exit()
+                return True
+        if not key == "PRESTOZL":
+                if os.path.exists(presto_path):
+                        if os.path.exists(presto_path+"/bin/accelsearch"):
+                                return True
+                        else:
+                                print("%sERROR%s: %s directory '%s' exists but I could not find 'accelsearch' in %s/bin!" % (colors.ERROR+colors.BOLD, colors.ENDCOLOR, key, presto_path, presto_path))
+                                print("Please make sure that your %s installation is actually there and working." % (key))
+                                exit()
+                        
 
 def check_if_enough_disk_space(root_workdir, num_DMs, T_obs_s, t_samp_s, list_segments_nofull, flag_remove_fftfiles, flag_remove_datfiles_of_segments):
         disk_space            = shutil.disk_usage(root_workdir)
@@ -2145,7 +2169,7 @@ class SurveyConfiguration(object):
                 self.config_filename = config_filename
                 self.list_datafiles = []
 
-                self.list_survey_configuration_ordered_params = ['SEARCH_LABEL', 'DATA_TYPE', 'ROOT_WORKDIR', 'PRESTO', 'PRESTO_GPU', 'DM_MIN', 'DM_MAX', 'DM_COHERENT_DEDISPERSION', 'N_SUBBANDS', 'PERIOD_TO_SEARCH_MIN', 'PERIOD_TO_SEARCH_MAX', 'LIST_SEGMENTS', 'RFIFIND_TIME', 'RFIFIND_CHANS_TO_ZAP', 'RFIFIND_TIME_INTERVALS_TO_ZAP', 'IGNORECHAN_LIST', 'ZAP_ISOLATED_PULSARS_FROM_FFTS', 'ZAP_ISOLATED_PULSARS_MAX_HARM', 'FLAG_ACCELERATION_SEARCH', 'ACCELSEARCH_LIST_ZMAX', 'ACCELSEARCH_NUMHARM', 'FLAG_JERK_SEARCH', 'JERKSEARCH_ZMAX', 'JERKSEARCH_WMAX', 'JERKSEARCH_NUMHARM', 'SIFTING_FLAG_REMOVE_DUPLICATES', 'SIFTING_FLAG_REMOVE_DM_PROBLEMS', 'SIFTING_FLAG_REMOVE_HARMONICS', 'SIFTING_MINIMUM_NUM_DMS', 'SIFTING_MINIMUM_DM', 'SIFTING_SIGMA_THRESHOLD', 'FLAG_FOLD_KNOWN_PULSARS', 'FLAG_FOLD_TIMESERIES', 'FLAG_FOLD_RAWDATA', 'RFIFIND_FLAGS', 'PREPDATA_FLAGS', 'PREPSUBBAND_FLAGS', 'REALFFT_FLAGS', 'REDNOISE_FLAGS', 'ACCELSEARCH_FLAGS', 'ACCELSEARCH_GPU_FLAGS', 'ACCELSEARCH_JERK_FLAGS', 'PREPFOLD_FLAGS', 'FLAG_SINGLEPULSE_SEARCH', 'SINGLEPULSE_SEARCH_FLAGS', 'USE_CUDA', 'CUDA_IDS', 'NUM_SIMULTANEOUS_JERKSEARCHES', 'NUM_SIMULTANEOUS_PREPFOLDS', 'NUM_SIMULTANEOUS_PREPSUBBANDS', 'MAX_SIMULTANEOUS_DMS_PER_PREPSUBBAND', 'FAST_BUFFER_DIR', 'FLAG_KEEP_DATA_IN_BUFFER_DIR', 'FLAG_REMOVE_FFTFILES', 'FLAG_REMOVE_DATFILES_OF_SEGMENTS', 'STEP_RFIFIND', 'STEP_ZAPLIST', 'STEP_DEDISPERSE', 'STEP_REALFFT', 'STEP_PERIODICITY_SEARCH', 'STEP_SIFTING', 'STEP_FOLDING', 'STEP_SINGLEPULSE_SEARCH']
+                self.list_survey_configuration_ordered_params = ['SEARCH_LABEL', 'DATA_TYPE', 'ROOT_WORKDIR', 'PRESTO', 'PRESTO_GPU', 'PRESTOZL','DM_MIN', 'DM_MAX', 'DM_COHERENT_DEDISPERSION', 'N_SUBBANDS', 'PERIOD_TO_SEARCH_MIN', 'PERIOD_TO_SEARCH_MAX', 'LIST_SEGMENTS', 'RFIFIND_TIME', 'RFIFIND_CHANS_TO_ZAP', 'RFIFIND_TIME_INTERVALS_TO_ZAP', 'IGNORECHAN_LIST', 'ZAP_ISOLATED_PULSARS_FROM_FFTS', 'ZAP_ISOLATED_PULSARS_MAX_HARM', 'FLAG_ACCELERATION_SEARCH', 'ACCELSEARCH_LIST_ZMAX', 'ACCELSEARCH_NUMHARM','ACCELSEARCH_BATCHSIZE', 'FLAG_JERK_SEARCH', 'JERKSEARCH_ZMAX', 'JERKSEARCH_WMAX', 'JERKSEARCH_NUMHARM', 'JERKSEARCH_BATCHSIZE','SIFTING_FLAG_REMOVE_DUPLICATES', 'SIFTING_FLAG_REMOVE_DM_PROBLEMS', 'SIFTING_FLAG_REMOVE_HARMONICS', 'SIFTING_MINIMUM_NUM_DMS', 'SIFTING_MINIMUM_DM', 'SIFTING_SIGMA_THRESHOLD', 'FLAG_FOLD_KNOWN_PULSARS', 'FLAG_FOLD_TIMESERIES', 'FLAG_FOLD_RAWDATA', 'RFIFIND_FLAGS', 'PREPDATA_FLAGS', 'PREPSUBBAND_FLAGS', 'REALFFT_FLAGS', 'REDNOISE_FLAGS', 'ACCELSEARCH_FLAGS', 'ACCELSEARCH_GPU_FLAGS', 'ACCELSEARCH_JERK_FLAGS', 'PREPFOLD_FLAGS', 'FLAG_SINGLEPULSE_SEARCH', 'SINGLEPULSE_SEARCH_FLAGS', 'USE_CUDA', 'CUDA_IDS', 'NUM_SIMULTANEOUS_JERKSEARCHES', 'NUM_SIMULTANEOUS_PREPFOLDS', 'NUM_SIMULTANEOUS_PREPSUBBANDS', 'MAX_SIMULTANEOUS_DMS_PER_PREPSUBBAND', 'FAST_BUFFER_DIR', 'FLAG_KEEP_DATA_IN_BUFFER_DIR', 'FLAG_REMOVE_FFTFILES', 'FLAG_REMOVE_DATFILES_OF_SEGMENTS', 'STEP_RFIFIND', 'STEP_ZAPLIST', 'STEP_DEDISPERSE', 'STEP_REALFFT', 'STEP_PERIODICITY_SEARCH', 'STEP_SIFTING', 'STEP_FOLDING', 'STEP_SINGLEPULSE_SEARCH']
 
                 self.dict_survey_configuration = {}
 
@@ -2155,6 +2179,9 @@ class SurveyConfiguration(object):
                         if line != "\n" and (not line.startswith("#")):
                                 list_line = shlex.split(line)
                                 self.dict_survey_configuration[list_line[0]] = list_line[1]  # Save parameter key and value in the dictionary 
+                self.prestozl_env = ""
+                self.accelsearch_batchsize = 8
+                self.jerksearch_batchsize = 8
                 for key in list(self.dict_survey_configuration.keys()):
                         if   key == "SEARCH_LABEL":                      self.search_label                     = self.dict_survey_configuration[key]
                         elif key == "DATA_TYPE":                         self.data_type                        = self.dict_survey_configuration[key]
@@ -2176,6 +2203,11 @@ class SurveyConfiguration(object):
                         elif key == "PRESTO_GPU":
                                 if check_presto_path(presto_path=self.dict_survey_configuration[key], key=key) == True:
                                         self.presto_gpu_env                   = self.dict_survey_configuration[key]
+                        elif key == "PRESTOZL":
+                                if self.dict_survey_configuration[key] == "":
+                                        self.prestozl_env                     = ""
+                                elif check_presto_path(presto_path=self.dict_survey_configuration[key], key=key) == True:
+                                        self.prestozl_env                     = self.dict_survey_configuration[key]
                         elif key == "DM_MIN":                               self.dm_min                                = self.dict_survey_configuration[key]
                         elif key == "DM_MAX":                               self.dm_max                                = self.dict_survey_configuration[key]
                         elif key == "DM_COHERENT_DEDISPERSION":             self.dm_coherent_dedispersion              = self.dict_survey_configuration[key]
@@ -2195,11 +2227,13 @@ class SurveyConfiguration(object):
                         elif key == "FLAG_ACCELERATION_SEARCH":             self.flag_acceleration_search              = int(self.dict_survey_configuration[key])
                         elif key == "ACCELSEARCH_LIST_ZMAX":                self.accelsearch_list_zmax                 = [int(x) for x in self.dict_survey_configuration[key].split(",")]
                         elif key == "ACCELSEARCH_NUMHARM":                  self.accelsearch_numharm                   = int(self.dict_survey_configuration[key])
+                        elif key == "ACCELSEARCH_BATCHSIZE":                self.accelsearch_batchsize                 = int(self.dict_survey_configuration[key])
 
                         elif key == "FLAG_JERK_SEARCH":                     self.flag_jerk_search                      = int(self.dict_survey_configuration[key])
                         elif key == "JERKSEARCH_ZMAX":                      self.jerksearch_zmax                       = int(self.dict_survey_configuration[key])
                         elif key == "JERKSEARCH_WMAX":                      self.jerksearch_wmax                       = int(self.dict_survey_configuration[key])
                         elif key == "JERKSEARCH_NUMHARM":                   self.jerksearch_numharm                    = int(self.dict_survey_configuration[key])
+                        elif key == "JERKSEARCH_BATCHSIZE":                 self.jerksearch_batchsize                  = int(self.dict_survey_configuration[key])
 
                         elif key == "SIFTING_FLAG_REMOVE_DUPLICATES":       self.sifting_flag_remove_duplicates        = int(self.dict_survey_configuration[key])
                         elif key == "SIFTING_FLAG_REMOVE_DM_PROBLEMS":      self.sifting_flag_remove_dm_problems       = int(self.dict_survey_configuration[key])
@@ -2264,13 +2298,10 @@ class SurveyConfiguration(object):
                 else:
                         self.list_segments_nofull        = copy.deepcopy(self.list_segments)
                         self.flag_search_full = 0
-
-
                 self.dict_chunks = {}      # {'filename': {'20m':   [0,1,2]}}
                 self.dict_search_structure = {}
                 if self.presto_gpu_env == "":
                         self.presto_gpu_env = self.presto_env
-
         def get_list_datafiles(self, list_datafiles_filename):
                 list_datafiles_file = open(list_datafiles_filename, "r" )
                 list_datafiles = [line.split()[0] for line in list_datafiles_file if not line.startswith("#") ] #Skip commented line
@@ -2285,7 +2316,7 @@ class SurveyConfiguration(object):
                 print("*********************************************")
                 print()
                 for param in self.list_survey_configuration_ordered_params:
-                        print("%-32s %s" % (param, self.dict_survey_configuration[param]))
+                        print("%-32s %s" % (param, self.dict_survey_configuration.get(param, "N/A")))
                 print()
 
 
@@ -2333,12 +2364,21 @@ def init_default(observation_filename):
                         except:
                                 print("ERROR: no PRESTO/PRESTO_ON_GPU environment variable seems to be defined!")
                                 exit()
+        try:
+                prestozl_path = os.environ['PRESTOZL']
+        except:
+                try:
+                        prestozl_path = '\"\"'  # If PRESTOZL is not defined, set it to an empty string
+                except:
+                        print("ERROR: no PRESTO/PRESTOZL environment variable seems to be defined!")
+                        exit()
 
         dict_survey_configuration_default_values = {'SEARCH_LABEL':                          "%s                # Label of this search project" % os.path.basename(os.getcwd()),
                                                     'DATA_TYPE':                             "%-18s            # Options: filterbank, psrfits" % (default_file_format),
                                                     'ROOT_WORKDIR':                          "(cwd)            # Path of the root working directory. Options: /absolute/path or '(cwd)' for current working directory",
                                                     'PRESTO':                                "%s               # Path of the main PRESTO installation" % presto_path,
                                                     'PRESTO_GPU':                            "%s               # Path of the PRESTO_ON_GPU installation (if present) " % presto_gpu_path,
+                                                    'PRESTOZL':                              "%s               # Path of the PRESTOZL installation (if present) " % prestozl_path,
                                                     'DM_MIN':                                "2.0                    # Minimum DM to search",
                                                     'DM_MAX':                                "100.0                  # Maximum DM to search",
                                                     'DM_COHERENT_DEDISPERSION':              "0                      # DM value of possible coherent dedispersion (CDD) (0 = NO CDD)",
@@ -2355,10 +2395,12 @@ def init_default(observation_filename):
                                                     'FLAG_ACCELERATION_SEARCH':              "1                      # Perform acceleration search? (1=yes, 0=no)",
                                                     'ACCELSEARCH_LIST_ZMAX':                 "0,200                  # List (comma-separated) of zmax values to use with PRESTO accelsearch ",
                                                     'ACCELSEARCH_NUMHARM':                   "8                      # Number of harmonics to use for acceleration search",
+                                                    'ACCELSEARCH_BATCHSIZE':                 "8                      # Number of rsteps to process at once",
                                                     'FLAG_JERK_SEARCH':                      "0                      # Perform jerk search? (1=yes, 0=no)",
                                                     'JERKSEARCH_ZMAX':                       "100                    # Zmax value to use for jerk search",
                                                     'JERKSEARCH_WMAX':                       "300                    # Wmax value to use for jerk search (0 = do not do jerk search)",
                                                     'JERKSEARCH_NUMHARM':                    "4                      # Number of harmonics to use for jerk search",
+                                                    'JERKSEARCH_BATCHSIZE':                  "8                      # Number of rsteps to process at once",
                                                     'SIFTING_FLAG_REMOVE_DUPLICATES' :       "1                      # Remove candidate duplicates when sifting? (1=yes, 0=no)",
                                                     'SIFTING_FLAG_REMOVE_DM_PROBLEMS' :      "1                      # Remove candidates that appear in few DM values? (1=yes, 0=no)",
                                                     'SIFTING_FLAG_REMOVE_HARMONICS' :        "1                      # Remove harmoniacally related candidates? (1=yes, 0=no)",
@@ -2417,6 +2459,7 @@ def init_default(observation_filename):
                 f.write("%-40s %s\n" % ('ROOT_WORKDIR', dict_survey_configuration_default_values['ROOT_WORKDIR']))
                 f.write("%-40s %s\n" % ('PRESTO', dict_survey_configuration_default_values['PRESTO']))
                 f.write("%-40s %s\n" % ('PRESTO_GPU', dict_survey_configuration_default_values['PRESTO_GPU']))
+                f.write("%-40s %s\n" % ('PRESTOZL', dict_survey_configuration_default_values['PRESTOZL']))
                 f.write("\n")
                 f.write("#===============================================================\n")
                 f.write("# Core search parameters\n")
@@ -2445,11 +2488,13 @@ def init_default(observation_filename):
                 f.write("%-40s %s\n" % ('FLAG_ACCELERATION_SEARCH', dict_survey_configuration_default_values['FLAG_ACCELERATION_SEARCH']))
                 f.write("%-40s %s\n" % ('ACCELSEARCH_LIST_ZMAX', dict_survey_configuration_default_values['ACCELSEARCH_LIST_ZMAX']))
                 f.write("%-40s %s\n" % ('ACCELSEARCH_NUMHARM', dict_survey_configuration_default_values['ACCELSEARCH_NUMHARM']))
+                f.write("%-40s %s\n" % ('ACCELSEARCH_BATCHSIZE', dict_survey_configuration_default_values['ACCELSEARCH_BATCHSIZE']))
                 f.write("\n")
                 f.write("%-40s %s\n" % ('FLAG_JERK_SEARCH', dict_survey_configuration_default_values['FLAG_JERK_SEARCH']))
                 f.write("%-40s %s\n" % ('JERKSEARCH_ZMAX', dict_survey_configuration_default_values['JERKSEARCH_ZMAX']))
                 f.write("%-40s %s\n" % ('JERKSEARCH_WMAX', dict_survey_configuration_default_values['JERKSEARCH_WMAX']))
                 f.write("%-40s %s\n" % ('JERKSEARCH_NUMHARM', dict_survey_configuration_default_values['JERKSEARCH_NUMHARM']))
+                f.write("%-40s %s\n" % ('JERKSEARCH_BATCHSIZE', dict_survey_configuration_default_values['JERKSEARCH_BATCHSIZE']))
                 f.write("\n")
                 f.write("%-40s %s\n" % ('SIFTING_FLAG_REMOVE_DUPLICATES', dict_survey_configuration_default_values['SIFTING_FLAG_REMOVE_DUPLICATES']))
                 f.write("%-40s %s\n" % ('SIFTING_FLAG_REMOVE_DM_PROBLEMS', dict_survey_configuration_default_values['SIFTING_FLAG_REMOVE_DM_PROBLEMS']))
@@ -3252,6 +3297,7 @@ if config.flag_step_dedisperse == 1:
                                         print()
                                         print("config.presto_env = ", config.presto_env)
                                         print("config.presto_gpu_env = ", config.presto_gpu_env)
+                                        print("config.prestozl_env = ", config.prestozl_env)
                                         print("**********************")
 
                                 dict_flag_steps = {'flag_step_dedisperse': config.flag_step_dedisperse, 'flag_step_realfft': config.flag_step_realfft, 'flag_step_periodicity_search': config.flag_step_periodicity_search}
