@@ -1213,7 +1213,7 @@ def singlepulse_search(work_dir, log_dir, LOG_basename, list_files_to_search, si
 
         
 
-def periodicity_search_FFT(work_dir, log_dir, LOG_basename, zapfile, segment_label, chunk_label, list_seg_ck_indices, list_DD_scheme, flag_use_cuda=0, list_cuda_ids=[0], flag_acceleration_search=1, numharm=8, list_zmax=[20], flag_jerk_search=1, jerksearch_zmax=0, jerksearch_wmax=0, jerksearch_numharm=4, num_simultaneous_jerksearches=1, period_to_search_min_s=0.001, period_to_search_max_s=20.0, other_flags_accelsearch="", flag_remove_fftfiles=0, flag_remove_datfiles_of_segments=0, presto_env_zmax_0=os.environ['PRESTO'], presto_env_zmax_any=os.environ['PRESTO'], verbosity_level=0, flag_LOG_append=1, dict_flag_steps= {'flag_step_dedisperse': 1 , 'flag_step_realfft': 1, 'flag_step_periodicity_search': 1}):
+def periodicity_search_FFT(work_dir, log_dir, LOG_basename, zapfile, segment_label, chunk_label, list_seg_ck_indices, list_DD_scheme, flag_use_cuda=0, list_cuda_ids=[0], flag_acceleration_search=1, numharm=8, list_zmax=[20], flag_jerk_search=1, jerksearch_zmax=0, jerksearch_wmax=0, jerksearch_numharm=4, num_simultaneous_jerksearches=1, period_to_search_min_s=0.001, period_to_search_max_s=20.0, other_flags_accelsearch="", flag_remove_fftfiles=0, flag_remove_datfiles_of_segments=0, presto_env_zmax_0=os.environ['PRESTO'], presto_env_zmax_any=os.environ['PRESTO'], verbosity_level=0, flag_LOG_append=1, dict_flag_steps= {'flag_step_dedisperse': 1 , 'flag_step_realfft': 1, 'flag_step_periodicity_search': 1},prestozl_env="",accelsearch_batchsize=8,jerksearch_batchsize=8):
 
         i_seg, N_seg, i_ck, N_ck = list_seg_ck_indices
 
@@ -2124,7 +2124,7 @@ def zapbirds(fft_infile, zapfile_name, work_dir, log_dir, LOG_basename, presto_e
         return zapped_fft_filename, zapped_inf_filename
 
 
-def dedisperse_rednoise_and_periodicity_search_FFT(infile, out_dir, root_workdir, log_dir, LOG_basename, flag_search_full, segment_label, chunk_label, list_seg_ck_indices, zapfile, Nsamples, ignorechan_list, mask_file, list_DD_schemes, nchan, subbands=0, num_simultaneous_prepsubbands=1, other_flags_prepsubband="", presto_env_prepsubband=os.environ['PRESTO'], flag_use_cuda=0, list_cuda_ids=[0], flag_acceleration_search=1, numharm=8, list_zmax=[20], flag_jerk_search=0, jerksearch_zmax=10, jerksearch_wmax=30, jerksearch_numharm=4, num_simultaneous_jerksearches=1, period_to_search_min_s=0.001, period_to_search_max_s=20.0, other_flags_accelsearch="", flag_remove_fftfiles=0, flag_remove_datfiles_of_segments=0, presto_env_accelsearch_zmax_0=os.environ['PRESTO'], presto_env_accelsearch_zmax_any=os.environ['PRESTO'], verbosity_level=0, dict_flag_steps = {'flag_step_dedisperse': 1 , 'flag_step_realfft': 1, 'flag_step_periodicity_search': 1}):
+def dedisperse_rednoise_and_periodicity_search_FFT(infile, out_dir, root_workdir, log_dir, LOG_basename, flag_search_full, segment_label, chunk_label, list_seg_ck_indices, zapfile, Nsamples, ignorechan_list, mask_file, list_DD_schemes, nchan, subbands=0, num_simultaneous_prepsubbands=1, other_flags_prepsubband="", presto_env_prepsubband=os.environ['PRESTO'], flag_use_cuda=0, list_cuda_ids=[0], flag_acceleration_search=1, numharm=8, list_zmax=[20], flag_jerk_search=0, jerksearch_zmax=10, jerksearch_wmax=30, jerksearch_numharm=4, num_simultaneous_jerksearches=1, period_to_search_min_s=0.001, period_to_search_max_s=20.0, other_flags_accelsearch="", flag_remove_fftfiles=0, flag_remove_datfiles_of_segments=0, presto_env_accelsearch_zmax_0=os.environ['PRESTO'], presto_env_accelsearch_zmax_any=os.environ['PRESTO'], verbosity_level=0, dict_flag_steps = {'flag_step_dedisperse': 1 , 'flag_step_realfft': 1, 'flag_step_periodicity_search': 1}, prestozl_env="", accelsearch_batchsize=8, jerksearch_batchsize=8):
         infile_nameonly = os.path.basename(infile)
         infile_basename = os.path.splitext(infile_nameonly)[0]
 
@@ -2161,7 +2161,7 @@ def dedisperse_rednoise_and_periodicity_search_FFT(infile, out_dir, root_workdir
                         print("dedisperse_rednoise_and_periodicity_search_FFT:: STEP_DEDISPERSE = 0, skipping prepsubband...")
 
         if not (segment_label == "full" and flag_search_full == 0):
-                periodicity_search_FFT(out_dir, log_dir, LOG_basename, zapfile, segment_label, chunk_label, list_seg_ck_indices, list_DD_schemes, flag_use_cuda, list_cuda_ids, flag_acceleration_search, numharm, list_zmax, flag_jerk_search, jerksearch_zmax, jerksearch_wmax, jerksearch_numharm, num_simultaneous_jerksearches, period_to_search_min_s, period_to_search_max_s, other_flags_accelsearch, flag_remove_fftfiles, flag_remove_datfiles_of_segments, presto_env_accelsearch_zmax_0, presto_env_accelsearch_zmax_any, verbosity_level, 1, dict_flag_steps)
+                periodicity_search_FFT(out_dir, log_dir, LOG_basename, zapfile, segment_label, chunk_label, list_seg_ck_indices, list_DD_schemes, flag_use_cuda, list_cuda_ids, flag_acceleration_search, numharm, list_zmax, flag_jerk_search, jerksearch_zmax, jerksearch_wmax, jerksearch_numharm, num_simultaneous_jerksearches, period_to_search_min_s, period_to_search_max_s, other_flags_accelsearch, flag_remove_fftfiles, flag_remove_datfiles_of_segments, presto_env_accelsearch_zmax_0, presto_env_accelsearch_zmax_any, verbosity_level, 1, dict_flag_steps, prestozl_env=prestozl_env, accelsearch_batchsize=accelsearch_batchsize, jerksearch_batchsize=jerksearch_batchsize)
 
 
 class SurveyConfiguration(object):
@@ -3340,7 +3340,10 @@ if config.flag_step_dedisperse == 1:
                                                                                config.presto_env,
                                                                                config.presto_gpu_env,
                                                                                verbosity_level,
-                                                                               dict_flag_steps)
+                                                                               dict_flag_steps,
+                                                                               accelsearch_batchsize=config.accelsearch_batchsize,
+                                                                               jerksearch_batchsize=config.jerksearch_batchsize,
+                                                                               prestozl_env=config.prestozl_env)
                                 
 
 if config.flag_step_sifting == 1:
