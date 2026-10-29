@@ -860,7 +860,7 @@ def check_rednoise_outfiles(fftfile_rednoise_abspath, verbosity_level=0):
                 return False
 
 
-def check_accelsearch_result(fft_infile, zmax, verbosity_level=0):
+def check_accelsearch_result(fft_infile, zmax, verbosity_level=0, flag_prestozl=0):
         fft_infile_nameonly = os.path.basename(fft_infile)
         fft_infile_basename = os.path.splitext(fft_infile_nameonly)[0]
 
@@ -875,12 +875,20 @@ def check_accelsearch_result(fft_infile, zmax, verbosity_level=0):
         ACCEL_txtcand_filename =  fft_infile.replace(".fft", "_ACCEL_%d.txtcand" % (zmax))
 
         try:
-                if (os.path.getsize(ACCEL_filename) > 0) and (os.path.getsize(ACCEL_cand_filename) > 0) and (os.path.getsize(ACCEL_txtcand_filename) > 0):
-                        result_message = "check_accelsearch_result:: Files exist and their size is > 0! Skipping..."
-                        check_result = True
+                if flag_prestozl:
+                        if (os.path.getsize(ACCEL_filename) > 0) and (os.path.getsize(ACCEL_cand_filename) > 0):
+                                result_message = "check_accelsearch_result:: Files exist and their size is > 0! Skipping..."
+                                check_result = True
+                        else:
+                                result_message = "check_accelsearch_result:: Files exists but at least one of them has size = 0!"
+                                check_result = False
                 else:
-                        result_message = "check_accelsearch_result:: Files exists but at least one of them has size = 0!"
-                        check_result = False
+                        if (os.path.getsize(ACCEL_filename) > 0) and (os.path.getsize(ACCEL_cand_filename) > 0) and (os.path.getsize(ACCEL_txtcand_filename) > 0):
+                                result_message = "check_accelsearch_result:: Files exist and their size is > 0! Skipping..."
+                                check_result = True
+                        else:
+                                result_message = "check_accelsearch_result:: Files exists but at least one of them has size = 0!"
+                                check_result = False
         except OSError:
                 result_message = "check_accelsearch_result:: OSError: It seems accelsearch has not been executed!"
                 check_result = False
@@ -930,13 +938,13 @@ def check_jerksearch_result(fft_infile, zmax, wmax, verbosity_level=0, flag_pres
         return check_result
 
 
-def accelsearch(infile, work_dir, log_abspath, numharm=8, zmax=0, other_flags="", dict_env= {}, verbosity_level=0, flag_LOG_append=1):
+def accelsearch(infile, work_dir, log_abspath, numharm=8, zmax=0, other_flags="", dict_env= {}, verbosity_level=0, flag_LOG_append=1, accelsearch_bin="accelsearch"):
         infile_nameonly = os.path.basename(infile)
         infile_basename = os.path.splitext(infile_nameonly)[0]
         inffile_empty = infile.replace(".fft", "_ACCEL_%d_empty" % (zmax))
 
-        cmd_accelsearch = "accelsearch %s -zmax %s -numharm %s %s" % (other_flags, zmax, numharm, infile)
-
+        cmd_accelsearch = "%s %s -zmax %s -numharm %s %s" % (accelsearch_bin, other_flags, zmax, numharm, infile)
+        flag_prestozl = (accelsearch_bin == "accelsearch_cu")
         if verbosity_level >= 2:
                 print()
                 print("BEGIN ACCELSEARCH ----------------------------------------------------------------------")
@@ -947,7 +955,7 @@ def accelsearch(infile, work_dir, log_abspath, numharm=8, zmax=0, other_flags=""
                 print("accelsearch:: work_dir = %s" % (work_dir))
                 print("accelsearch:: infile = %s" % (infile))
 
-        if check_accelsearch_result(infile, int(zmax)) == False and check_accelsearch_result(inffile_empty, int(zmax)) == False:
+        if check_accelsearch_result(infile, int(zmax), flag_prestozl=flag_prestozl) == False and check_accelsearch_result(inffile_empty, int(zmax), flag_prestozl=flag_prestozl) == False:
                 if verbosity_level >= 2:
                         print("accelsearch:: running: %s" % (cmd_accelsearch))
                 execute_and_log(cmd_accelsearch, work_dir, log_abspath, dict_env, flag_LOG_append)
@@ -958,7 +966,7 @@ def accelsearch(infile, work_dir, log_abspath, numharm=8, zmax=0, other_flags=""
         if verbosity_level >= 2:
                 print("accelsearch:: NOW I CHECK THE RESULT OF THE EXECUTION!")
 
-        if check_accelsearch_result(infile, int(zmax)) == False:
+        if check_accelsearch_result(infile, int(zmax), flag_prestozl=flag_prestozl) == False:
                 if verbosity_level >= 2:
                         print("False! Then I create a _empty file!")
                 file_empty = open(inffile_empty, "w")
@@ -1332,24 +1340,34 @@ def periodicity_search_FFT(work_dir, log_dir, LOG_basename, zapfile, segment_lab
                                                                 if verbosity_level >= 2:
                                                                         print("accelsearch:: zmax == 0 ----> dict_env = %s" % (dict_env))
                                                                 flag_cuda = ""
+                                                                accelsearch_bin = "accelsearch"
                                                         else:
-                                                                if flag_use_cuda == 1:
+                                                                if prestozl_env != "":
+                                                                        dict_env = copy.deepcopy(dict_env_prestozl)
+                                                                        gpuid = list_cuda_ids[i % len(list_cuda_ids)]
+                                                                        dict_env['CUDA_VISIBLE_DEVICES'] = str(gpuid)
+                                                                        flag_cuda = " -batchsize %d " % (accelsearch_batchsize)
+                                                                        accelsearch_bin = "accelsearch_cu"
+                                                                elif flag_use_cuda == 1:
                                                                         dict_env = copy.deepcopy(dict_env_zmax_any)
                                                                         gpu_id = random.choice(list_cuda_ids)
                                                                         flag_cuda = " -cuda %d " % (gpu_id)
+                                                                        accelsearch_bin = "accelsearch"
                                                                 else:
                                                                         dict_env = copy.deepcopy(dict_env_zmax_0)
                                                                         flag_cuda = ""
+                                                                        accelsearch_bin = "accelsearch"
 
                                                                 if verbosity_level >= 2:
                                                                         print("periodicity_search_FFT:: zmax == %d ----> dict_env = %s" % (int(z), dict_env))
                                                                         print("periodicity_search_FFT:: Now check CUDA: list_cuda_ids = ", list_cuda_ids)
                                                                         print("periodicity_search_FFT:: flag_use_cuda = ", flag_use_cuda)
                                                                         print("periodicity_search_FFT:: flag_cuda = ", flag_cuda)
+                                                                        print("periodicity_search_FFT:: accelsearch_bin = ", accelsearch_bin)
 
                                                         accelsearch_flags = other_flags_accelsearch + flag_cuda  # + " -flo %s -fhi %s" % (frequency_to_search_min, frequency_to_search_max)
 
-                                                        accelsearch(fft_file, work_dir, log_abspath, numharm=numharm, zmax=z, other_flags=accelsearch_flags, dict_env=dict_env, verbosity_level=verbosity_level, flag_LOG_append=flag_LOG_append)
+                                                        accelsearch(fft_file, work_dir, log_abspath, numharm=numharm, zmax=z, other_flags=accelsearch_flags, dict_env=dict_env, verbosity_level=verbosity_level, flag_LOG_append=flag_LOG_append,accelsearch_bin=accelsearch_bin)
                                                         tend_accelsearch = time.time()
                                                         time_taken_accelsearch_s = tend_accelsearch - tstart_accelsearch
                                                         print("done in %.2f s!" % (time_taken_accelsearch_s))
@@ -1461,24 +1479,34 @@ def periodicity_search_FFT(work_dir, log_dir, LOG_basename, zapfile, segment_lab
                                                                 if verbosity_level >= 2:
                                                                         print("accelsearch:: zmax == 0 ----> dict_env = %s" % (dict_env))
                                                                 flag_cuda = ""
+                                                                accelsearch_bin = "accelsearch"
                                                         else:
-                                                                if flag_use_cuda == 1:
+                                                                if prestozl_env != "":
+                                                                        dict_env = copy.deepcopy(dict_env_prestozl)
+                                                                        gpuid = list_cuda_ids[i % len(list_cuda_ids)]
+                                                                        dict_env['CUDA_VISIBLE_DEVICES'] = str(gpuid)
+                                                                        flag_cuda = " -batchsize %d " % (accelsearch_batchsize)
+                                                                        accelsearch_bin = "accelsearch_cu"
+                                                                elif flag_use_cuda == 1:
                                                                         dict_env = copy.deepcopy(dict_env_zmax_any)
                                                                         gpu_id = random.choice(list_cuda_ids)
                                                                         flag_cuda = " -cuda %d " % (gpu_id)
+                                                                        accelsearch_bin = "accelsearch"
                                                                 else:
                                                                         dict_env = copy.deepcopy(dict_env_zmax_0)
                                                                         flag_cuda = ""
+                                                                        accelsearch_bin = "accelsearch"
 
                                                                 if verbosity_level >= 2:
                                                                         print("periodicity_search_FFT:: zmax == %d ----> dict_env = %s" % (int(z), dict_env))
                                                                         print("periodicity_search_FFT:: Now check CUDA: list_cuda_ids = ", list_cuda_ids)
                                                                         print("periodicity_search_FFT:: flag_use_cuda = ", flag_use_cuda)
                                                                         print("periodicity_search_FFT:: flag_cuda = ", flag_cuda)
+                                                                        print("periodicity_search_FFT:: accelsearch_bin = ", accelsearch_bin)
 
                                                         accelsearch_flags = other_flags_accelsearch + flag_cuda  # + " -flo %s -fhi %s" % (frequency_to_search_min, frequency_to_search_max)
 
-                                                        accelsearch(fft_file, work_dir, log_abspath, numharm=numharm, zmax=z, other_flags=accelsearch_flags, dict_env=dict_env, verbosity_level=verbosity_level, flag_LOG_append=flag_LOG_append)
+                                                        accelsearch(fft_file, work_dir, log_abspath, numharm=numharm, zmax=z, other_flags=accelsearch_flags, dict_env=dict_env, verbosity_level=verbosity_level, flag_LOG_append=flag_LOG_append,accelsearch_bin=accelsearch_bin)
                                                         tend_accelsearch = time.time()
                                                         time_taken_accelsearch_s = tend_accelsearch - tstart_accelsearch
                                                         print("done in %.2f s!" % (time_taken_accelsearch_s)); sys.stdout.flush()
