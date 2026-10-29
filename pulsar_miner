@@ -1968,11 +1968,13 @@ def get_DDplan_scheme(infile, out_dir, log_dir, LOG_basename, loDM, highDM, DM_c
         return list_DD_schemes
 
 
-def dedisperse(infile, out_dir, log_dir, LOG_basename, segment_label, chunk_label, Nsamples, ignorechan_list, mask_file, list_DD_schemes, nchan, nsubbands=0, num_simultaneous_prepsubbands=1, other_flags="", presto_env=os.environ['PRESTO'], verbosity_level=0):
+def dedisperse(infile, out_dir, log_dir, LOG_basename, segment_label, chunk_label, Nsamples, ignorechan_list, mask_file, list_DD_schemes, nchan, nsubbands=0, num_simultaneous_prepsubbands=1, other_flags="", presto_env=os.environ['PRESTO'], verbosity_level=0, prestozl_env="", list_cuda_ids=[0]):
         infile_nameonly = os.path.basename(infile)
         infile_basename = os.path.splitext(infile_nameonly)[0]
         prepsubband_outfilename = "%s_%s_%s" % (infile_basename, segment_label, chunk_label)
         dict_env = {'PRESTO': presto_env, 'PATH': "%s/bin:%s" % (presto_env, os.environ['PATH']), 'LD_LIBRARY_PATH': "%s/lib:%s" % (presto_env, os.environ['LD_LIBRARY_PATH'])}
+        dict_env_prestozl = {'PRESTO': prestozl_env, 'PATH': "%s/bin:%s" % (prestozl_env, os.environ['PATH']), 'LD_LIBRARY_PATH': "%s/lib:%s" % (prestozl_env, os.environ['LD_LIBRARY_PATH'])}
+        prepsubband_bin = "prepsubband_cu" if prestozl_env != "" else "prepsubband"
         file_script_prepsubband_name = "script_prepsubband.txt"
         file_script_prepsubband_abspath = "%s/%s" % (out_dir, file_script_prepsubband_name)
         
@@ -2009,9 +2011,9 @@ def dedisperse(infile, out_dir, log_dir, LOG_basename, segment_label, chunk_labe
         for i in range(N_schemes):
                 flag_numout = ""
                 if i < N_schemes-1:
-                        cmd_prepsubband = "prepsubband %s %s -o %s %s %s -lodm %s -dmstep %s -numdms %s -downsamp %s -nsub %s %s" % (other_flags, flag_numout, prepsubband_outfilename, string_ignorechan, string_mask, list_DD_schemes[i]['loDM'], list_DD_schemes[i]['dDM'], list_DD_schemes[i]['num_DMs']    , list_DD_schemes[i]['downsamp'], nsubbands, infile)
+                        cmd_prepsubband = "%s %s %s -o %s %s %s -lodm %s -dmstep %s -numdms %s -downsamp %s -nsub %s %s" % (prepsubband_bin, other_flags, flag_numout, prepsubband_outfilename, string_ignorechan, string_mask, list_DD_schemes[i]['loDM'], list_DD_schemes[i]['dDM'], list_DD_schemes[i]['num_DMs']    , list_DD_schemes[i]['downsamp'], nsubbands, infile)
                 elif i == N_schemes-1:
-                        cmd_prepsubband = "prepsubband %s %s -o %s %s %s -lodm %s -dmstep %s -numdms %s -downsamp %s -nsub %s %s" % (other_flags, flag_numout, prepsubband_outfilename, string_ignorechan, string_mask, list_DD_schemes[i]['loDM'], list_DD_schemes[i]['dDM'], list_DD_schemes[i]['num_DMs'] + 1, list_DD_schemes[i]['downsamp'], nsubbands, infile)
+                        cmd_prepsubband = "%s %s %s -o %s %s %s -lodm %s -dmstep %s -numdms %s -downsamp %s -nsub %s %s" % (prepsubband_bin, other_flags, flag_numout, prepsubband_outfilename, string_ignorechan, string_mask, list_DD_schemes[i]['loDM'], list_DD_schemes[i]['dDM'], list_DD_schemes[i]['num_DMs'] + 1, list_DD_schemes[i]['downsamp'], nsubbands, infile)
                 file_script_prepsubband.write("%s\n" % cmd_prepsubband)
 
         file_script_prepsubband.close()
@@ -2029,7 +2031,7 @@ def dedisperse(infile, out_dir, log_dir, LOG_basename, segment_label, chunk_labe
         N_prepsubband_schemes_done = 0
         list_prepsubband_commands = []
         list_prepsubband_workdirs = []
-
+        list_prepsubband_envs = []
 
         while (N_prepsubband_schemes_done < N_schemes):
                 if verbosity_level >= 2:
@@ -2039,13 +2041,19 @@ def dedisperse(infile, out_dir, log_dir, LOG_basename, segment_label, chunk_labe
                         loDM = np.float64(list_DD_schemes[i]['loDM'])
                         dDM  = np.float64(list_DD_schemes[i]['dDM'])
                         hiDM = loDM + int(list_DD_schemes[i]['num_DMs'])*dDM
-
+                        if prestozl_env != "":
+                                dict_env_cmd = copy.deepcopy(dict_env_prestozl)
+                                dict_env_cmd['CUDA_VISIBLE_DEVICES'] = str(list_cuda_ids[i % len(list_cuda_ids)])
+                                prepsubband_bin = "prepsubband_cu"
+                        else:
+                                dict_env_cmd = dict_env
+                                prepsubband_bin = "prepsubband"
                         if i < N_schemes-1:
                                 str_parentesis = ")"
-                                cmd_prepsubband = "prepsubband %s %s -o %s %s %s -lodm %s -dmstep %s -numdms %s -downsamp %s -nsub %s %s" % (other_flags, flag_numout, prepsubband_outfilename, string_ignorechan, string_mask, list_DD_schemes[i]['loDM'], list_DD_schemes[i]['dDM'], list_DD_schemes[i]['num_DMs']    , list_DD_schemes[i]['downsamp'], nsubbands, infile)
+                                cmd_prepsubband = "%s %s %s -o %s %s %s -lodm %s -dmstep %s -numdms %s -downsamp %s -nsub %s %s" % (prepsubband_bin, other_flags, flag_numout, prepsubband_outfilename, string_ignorechan, string_mask, list_DD_schemes[i]['loDM'], list_DD_schemes[i]['dDM'], list_DD_schemes[i]['num_DMs']    , list_DD_schemes[i]['downsamp'], nsubbands, infile)
                         elif i == N_schemes-1:
                                 str_parentesis = "]"
-                                cmd_prepsubband = "prepsubband %s %s -o %s %s %s -lodm %s -dmstep %s -numdms %s -downsamp %s -nsub %s %s" % (other_flags, flag_numout, prepsubband_outfilename, string_ignorechan, string_mask, list_DD_schemes[i]['loDM'], list_DD_schemes[i]['dDM'], list_DD_schemes[i]['num_DMs'] + 1, list_DD_schemes[i]['downsamp'], nsubbands, infile)
+                                cmd_prepsubband = "%s %s %s -o %s %s %s -lodm %s -dmstep %s -numdms %s -downsamp %s -nsub %s %s" % (prepsubband_bin, other_flags, flag_numout, prepsubband_outfilename, string_ignorechan, string_mask, list_DD_schemes[i]['loDM'], list_DD_schemes[i]['dDM'], list_DD_schemes[i]['num_DMs'] + 1, list_DD_schemes[i]['downsamp'], nsubbands, infile)
 
                         if check_prepsubband_result_single_scheme(out_dir, list_DD_schemes[i], verbosity_level) == False:
                                 if num_simultaneous_prepsubbands == 1 or N_schemes == 1:
@@ -2054,8 +2062,8 @@ def dedisperse(infile, out_dir, log_dir, LOG_basename, segment_label, chunk_labe
                                         if verbosity_level >= 2:
                                                 print("dedisperse:: %d) RUNNING: %s" % (i, cmd_prepsubband))
 
-                                        execute_and_log("which prepsubband", out_dir, log_abspath, dict_env, 1)
-                                        execute_and_log(cmd_prepsubband, out_dir, log_abspath, dict_env, 1)
+                                        execute_and_log("which %s" % prepsubband_bin, out_dir, log_abspath, dict_env_cmd, 1)
+                                        execute_and_log(cmd_prepsubband, out_dir, log_abspath, dict_env_cmd, 1)
                                         if check_prepsubband_result_single_scheme(out_dir, list_DD_schemes[i], verbosity_level) == True:
                                                 N_prepsubband_schemes_done = N_prepsubband_schemes_done + 1
                                         if verbosity_level >= 1:
@@ -2064,6 +2072,7 @@ def dedisperse(infile, out_dir, log_dir, LOG_basename, segment_label, chunk_labe
                                 elif num_simultaneous_prepsubbands > 1 and N_schemes > 1:
                                         list_prepsubband_commands.append(cmd_prepsubband)
                                         list_prepsubband_workdirs.append(out_dir)
+                                        list_prepsubband_envs.append(dict_env_cmd)
                                         #print("list_prepsubband_commands = %s", list_prepsubband_commands)
                                         N_prepsubband_schemes_done = N_prepsubband_schemes_done + 1
         
@@ -2081,7 +2090,7 @@ def dedisperse(infile, out_dir, log_dir, LOG_basename, segment_label, chunk_labe
                 for k in range(len(list_prepsubband_commands)):
                         print("Queing prepsubband command #%d: '%s'" % (k+1, list_prepsubband_commands[k]))
                         time.sleep(0.1)
-                        TP.apply_async(execute_and_log_in_thread_pool, (list_prepsubband_commands[k], log_dir, list_prepsubband_workdirs[k], k, N_commands, 1) )
+                        TP.apply_async(execute_and_log_in_thread_pool, (list_prepsubband_commands[k], log_dir, list_prepsubband_workdirs[k], k, N_commands, 1, list_prepsubband_envs[k]) )
                 TP.close()
                 TP.join()
                 print()
@@ -2169,7 +2178,7 @@ def dedisperse_rednoise_and_periodicity_search_FFT(infile, out_dir, root_workdir
 
         if dict_flag_steps['flag_step_dedisperse'] == 1:
                 if segment_label == "full":
-                        dedisperse(infile, out_dir, log_dir, LOG_basename, segment_label, chunk_label, Nsamples, ignorechan_list, mask_file, list_DD_schemes, nchan, subbands, num_simultaneous_prepsubbands, other_flags_prepsubband, presto_env_prepsubband, verbosity_level)
+                        dedisperse(infile, out_dir, log_dir, LOG_basename, segment_label, chunk_label, Nsamples, ignorechan_list, mask_file, list_DD_schemes, nchan, subbands, num_simultaneous_prepsubbands, other_flags_prepsubband, presto_env_prepsubband, verbosity_level,prestozl_env=prestozl_env, list_cuda_ids=list_cuda_ids)
                 else:
 
                         search_string = "%s/03_DEDISPERSION/%s/full/ck00/*.dat" % (root_workdir, infile_basename) #List of datfiles to split
