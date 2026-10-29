@@ -507,7 +507,7 @@ class Observation(object):
                                 self.Tstart_MJD       = self.MJD_int + np.float64(self.MJD_sec/86400.)
 
 
-def execute_and_log_in_thread_pool(command, log_dir, work_dir, id_num, N_ids, flag_log=1):
+def execute_and_log_in_thread_pool(command, log_dir, work_dir, id_num, N_ids, flag_log=1, dict_envs={}):
        datetime_start = (datetime.datetime.now()).strftime("%Y/%m/%d  %H:%M")
        datetime_start_single_string = (datetime.datetime.now()).strftime("%Y%m%d_%H%M")
        time_start = time.time()
@@ -523,7 +523,10 @@ def execute_and_log_in_thread_pool(command, log_dir, work_dir, id_num, N_ids, fl
               if "?" in current_piece or "*" in current_piece:
                      new_list_for_Popen = list_for_Popen[:i] + sorted(glob.glob(current_piece)) + list_for_Popen[i+1:]
                      list_for_Popen = new_list_for_Popen
-
+       env_subprocess = os.environ.copy()
+       if dict_envs:  # If the dictionary is not empty                                                                                                                                                            
+                for k in list(dict_envs.keys()):
+                        env_subprocess[k] = dict_envs[k]
        if flag_log == 1:
                log_filename = "LOG_%s_%s_%03d.txt" % (command_label, datetime_start_single_string, int(id_num))
                log_abspath = os.path.join(log_dir, log_filename)
@@ -535,10 +538,10 @@ def execute_and_log_in_thread_pool(command, log_dir, work_dir, id_num, N_ids, fl
                log_file.write("WORKING DIRECTORY: %s\n" % (work_dir))
                log_file.write("****************************************************************\n")
                log_file.flush()
-               proc = subprocess.Popen(list_for_Popen, cwd=work_dir, stdout=log_file, stderr=log_file)
+               proc = subprocess.Popen(list_for_Popen, cwd=work_dir, stdout=log_file, stderr=log_file, env=env_subprocess)
        elif flag_log == 0:
                print("Not logging..")
-               proc = subprocess.Popen(list_for_Popen, cwd=work_dir, stdout=subprocess.PIPE)
+               proc = subprocess.Popen(list_for_Popen, cwd=work_dir, stdout=subprocess.PIPE, env=env_subprocess)
        proc.communicate()
 
        datetime_end = (datetime.datetime.now()).strftime("%Y/%m/%d  %H:%M")
@@ -1396,6 +1399,7 @@ def periodicity_search_FFT(work_dir, log_dir, LOG_basename, zapfile, segment_lab
         elif num_simultaneous_jerksearches >= 2 and jerksearch_wmax > 0 and flag_jerk_search == 1:
                 list_jerksearch_commands = []
                 list_jerksearch_workdirs = []
+                list_jerksearch_envs = []
                 jerksearch_flags = other_flags_accelsearch
                 print("\nJerk search with multiple CPUs active")
 
@@ -1481,9 +1485,20 @@ def periodicity_search_FFT(work_dir, log_dir, LOG_basename, zapfile, segment_lab
                                                         ACCEL_filename = fft_file.replace(".fft", "_ACCEL_%s" % (int(z)))
 
                                         print("Seg '%s' %d/%d | ck %d/%d | DM %d/%d - Will do jerk search of %s with zmax=%d, wmax=%d, numharm=%d at the end of the acceleration search of this chunk..." % (segment_label, i_seg+1, N_seg, i_ck+1, N_ck, N_files_searched+i+1, N_DMs_to_search, zapped_fft_nameonly, jerksearch_zmax, jerksearch_wmax, jerksearch_numharm), end=' ')
-                                        cmd_jerksearch = "accelsearch %s -zmax %d -wmax %d -numharm %d %s" % (jerksearch_flags, jerksearch_zmax, jerksearch_wmax, jerksearch_numharm, fft_file)
+                                        if prestozl_env != "":
+                                                dict_env = copy.deepcopy(dict_env_prestozl)
+                                                gpuid = list_cuda_ids[i % len(list_cuda_ids)]
+                                                dict_env['CUDA_VISIBLE_DEVICES'] = str(gpuid)
+                                                jerk_flags = jerksearch_flags + " -batchsize %d " % (jerksearch_batchsize)
+                                                jerk_bin="accelsearch_cu"
+                                        else:
+                                                dict_env = copy.deepcopy(dict_env_zmax_0)
+                                                jerk_flags = jerksearch_flags
+                                                jerk_bin="accelsearch"
+                                        cmd_jerksearch = "%s %s -zmax %d -wmax %d -numharm %d %s" % (jerk_bin,jerk_flags, jerksearch_zmax, jerksearch_wmax, jerksearch_numharm, fft_file)
                                         list_jerksearch_commands.append(cmd_jerksearch)
                                         list_jerksearch_workdirs.append(work_dir)
+                                        list_jerksearch_envs.append(dict_env)
                                         print()
 
                                 
@@ -1495,7 +1510,7 @@ def periodicity_search_FFT(work_dir, log_dir, LOG_basename, zapfile, segment_lab
                 for k in range(len(list_jerksearch_commands)):
                         print("Queing jerk search command #%d: '%s'" % (k+1, list_jerksearch_commands[k]))
                         time.sleep(0.1)
-                        TP.apply_async(execute_and_log_in_thread_pool, (list_jerksearch_commands[k], log_dir, list_jerksearch_workdirs[k], k, N_commands, 1) )
+                        TP.apply_async(execute_and_log_in_thread_pool, (list_jerksearch_commands[k], log_dir, list_jerksearch_workdirs[k], k, N_commands, 1, list_jerksearch_envs[k]) )
                 print("\n")
                 print("Running %d jerk search commands at once..." % (num_simultaneous_jerksearches)); sys.stdout.flush()
                 TP.close()
