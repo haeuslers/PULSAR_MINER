@@ -937,6 +937,10 @@ def check_jerksearch_result(fft_infile, zmax, wmax, verbosity_level=0, flag_pres
 
         return check_result
 
+def check_fft_size(fft_file, zmax):
+        numbins = os.path.getsize(fft_file) / 8
+        plane_min = 8*numbins*(zmax+1)
+        return plane_min>=2e9
 
 def accelsearch(infile, work_dir, log_abspath, numharm=8, zmax=0, other_flags="", dict_env= {}, verbosity_level=0, flag_LOG_append=1, accelsearch_bin="accelsearch"):
         infile_nameonly = os.path.basename(infile)
@@ -1342,13 +1346,13 @@ def periodicity_search_FFT(work_dir, log_dir, LOG_basename, zapfile, segment_lab
                                                                 flag_cuda = ""
                                                                 accelsearch_bin = "accelsearch"
                                                         else:
-                                                                if prestozl_env != "":
+                                                                if prestozl_env != "" and check_fft_size(fft_file, z) == True:
                                                                         dict_env = copy.deepcopy(dict_env_prestozl)
                                                                         gpuid = list_cuda_ids[i % len(list_cuda_ids)]
                                                                         dict_env['CUDA_VISIBLE_DEVICES'] = str(gpuid)
                                                                         flag_cuda = " -batchsize %d " % (accelsearch_batchsize)
                                                                         accelsearch_bin = "accelsearch_cu"
-                                                                elif flag_use_cuda == 1:
+                                                                elif flag_use_cuda == 1 and dict_env_zmax_any != dict_env_zmax_0:
                                                                         dict_env = copy.deepcopy(dict_env_zmax_any)
                                                                         gpu_id = random.choice(list_cuda_ids)
                                                                         flag_cuda = " -cuda %d " % (gpu_id)
@@ -1481,13 +1485,13 @@ def periodicity_search_FFT(work_dir, log_dir, LOG_basename, zapfile, segment_lab
                                                                 flag_cuda = ""
                                                                 accelsearch_bin = "accelsearch"
                                                         else:
-                                                                if prestozl_env != "":
+                                                                if prestozl_env != "" and check_fft_size(fft_file, z) == True:
                                                                         dict_env = copy.deepcopy(dict_env_prestozl)
                                                                         gpuid = list_cuda_ids[i % len(list_cuda_ids)]
                                                                         dict_env['CUDA_VISIBLE_DEVICES'] = str(gpuid)
                                                                         flag_cuda = " -batchsize %d " % (accelsearch_batchsize)
                                                                         accelsearch_bin = "accelsearch_cu"
-                                                                elif flag_use_cuda == 1:
+                                                                elif flag_use_cuda == 1 and dict_env_zmax_any != dict_env_zmax_0:
                                                                         dict_env = copy.deepcopy(dict_env_zmax_any)
                                                                         gpu_id = random.choice(list_cuda_ids)
                                                                         flag_cuda = " -cuda %d " % (gpu_id)
